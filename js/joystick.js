@@ -1,55 +1,74 @@
-import Sprite from './base/sprite'
-
-export default class Joystick extends Sprite {
-  constructor(x, y) {
-    super(x, y, 120, 120)
-    this.knobX = x
-    this.knobY = y
-    this.knobSize = 40
-    this.direction = 0
-    this.force = 0
-    this.isActive = false
-    this.maxRadius = 50
+// 在js/joystick.js中
+export default class Joystick {
+  constructor(baseX, baseY) {
+    this.baseX = baseX;
+    this.baseY = baseY;
+    this.stickX = baseX;
+    this.stickY = baseY;
+    this.isActive = false;
+    this.maxDistance = 40;
   }
 
   handleTouchStart(x, y) {
-    const distance = Math.sqrt((x - this.x)**2 + (y - this.y)**2)
-    if (distance <= this.width/2) {
-      this.isActive = true
-      this.updatePosition(x, y)
-    }
+    this.isActive = true;
+    this.handleTouchMove(x, y);
   }
 
-  updatePosition(x, y) {
-    const dx = x - this.x
-    const dy = y - this.y
-    const distance = Math.sqrt(dx**2 + dy**2)
-    
-    this.direction = Math.atan2(dy, dx)
-    this.force = Math.min(distance / this.maxRadius, 1)
-    
-    if (distance > this.maxRadius) {
-      this.knobX = this.x + (dx / distance) * this.maxRadius
-      this.knobY = this.y + (dy / distance) * this.maxRadius
+  handleTouchMove(x, y) {
+    const deltaX = x - this.baseX;
+    const deltaY = y - this.baseY;
+    const distance = Math.sqrt(deltaX**2 + deltaY**2);
+
+    if (distance > this.maxDistance) {
+      const angle = Math.atan2(deltaY, deltaX);
+      this.stickX = this.baseX + Math.cos(angle) * this.maxDistance;
+      this.stickY = this.baseY + Math.sin(angle) * this.maxDistance;
     } else {
-      this.knobX = x
-      this.knobY = y
+      this.stickX = x;
+      this.stickY = y;
     }
   }
 
-  draw(context) {
-    if (!this.visible) return
-    
-    // 绘制底座
-    context.fillStyle = 'rgba(0, 0, 0, 0.3)'
-    context.beginPath()
-    context.arc(this.x, this.y, this.width/2, 0, Math.PI*2)
-    context.fill()
-
-    // 绘制摇杆
-    context.fillStyle = 'rgba(255, 255, 255, 0.8)'
-    context.beginPath()
-    context.arc(this.knobX, this.knobY, this.knobSize/2, 0, Math.PI*2)
-    context.fill()
+  handleTouchEnd() {
+    this.isActive = false;
+    this.stickX = this.baseX;
+    this.stickY = this.baseY;
   }
+
+  // 在Joystick类中优化getDirection方法
+getDirection() {
+  const deadZone = 5; // 5像素内的移动视为无效
+  if (Math.abs(this.stickX - this.baseX) < deadZone && 
+      Math.abs(this.stickY - this.baseY) < deadZone) {
+    return { x: 0, y: 0 };
+  }
+  const deltaX = this.stickX - this.baseX;
+  const deltaY = this.stickY - this.baseY;
+  const magnitude = Math.sqrt(deltaX ** 2 + deltaY ** 2) || 1; // 避免除以零
+  
+  return {
+    x: deltaX / magnitude,
+    y: deltaY / magnitude
+  };
+}
+draw(ctx) {
+  // 绘制摇杆基底
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.arc(this.baseX, this.baseY, 30, 0, Math.PI * 2);
+  ctx.fill();
+
+   // 摇杆手柄
+   ctx.fillStyle = this.isActive ? '#666' : '#999';
+   ctx.beginPath();
+   ctx.arc(this.stickX, this.stickY, 15, 0, Math.PI * 2);
+   ctx.fill();
+ }
+
+ // 在Joystick类中添加
+reset() {
+  this.isActive = false;
+  this.stickX = this.baseX;
+  this.stickY = this.baseY;
+}
 }

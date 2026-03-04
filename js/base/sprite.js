@@ -5,16 +5,15 @@ export default class Sprite {
     this.width = width
     this.height = height
     this.visible = true
-    this.img = null
   }
-
+  
   draw(context) {
-    if (!this.visible || !this.img?.image) return
+    if (!this.visible || !this.img) return
     
-    context.drawImage(
-      this.img.image,
-      this.x - this.width/2,
-      this.y - this.height/2,
+    this.img.draw(
+      context,
+      this.x - this.width / 2,
+      this.y - this.height / 2,
       this.width,
       this.height
     )
